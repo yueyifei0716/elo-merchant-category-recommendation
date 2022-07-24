@@ -21,7 +21,7 @@ def type_transform_dictionary_sort(feature):
     value = feature.unique().tolist()
     value.sort()
     return feature.map(pd.Series(range(len(value)), index=value)).values
-'''
+
 ##Processing 'train.csv','test.csv'
 
 #Checking if card_id is unique.
@@ -76,7 +76,7 @@ print("if each merchant_id has unique relevant information:",merchant.shape[0] =
 duplicate_column=['merchant_id', 'merchant_category_id', 'subsector_id', 'category_1', 'city_id', 'state_id', 'category_2']
 merchant = merchant.drop(duplicate_column[1:], axis=1)
 merchant = merchant.loc[merchant['merchant_id'].drop_duplicates().index.tolist()].reset_index(drop=True)
-'''
+
 transaction=pd.concat([new_transaction,history_transaction],axis=0,ignore_index=True)
 del new_merchant_dict
 del history_transaction
