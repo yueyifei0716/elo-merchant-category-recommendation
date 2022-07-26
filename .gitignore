@@ -115,3 +115,5 @@ Temporary Items
 elo-merchant-category-recommendation.zip
 /yifei/preprocess/
 *.ipynb
+/yifei/models/__pycache__/
+/yifei/result
