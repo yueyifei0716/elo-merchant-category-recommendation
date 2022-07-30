@@ -1,0 +1,88 @@
+import gc
+import datetime
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+from xgboost import XGBRFRegressor
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import KFold
+import xgboost as xgb
+import warnings
+warnings.simplefilter('ignore', FutureWarning)
+import heapq
+import math
+def feature_select_pearson(train):
+    """
+    利用pearson系数进行相关性特征
+    :param train:训练集
+    :param test:测试集
+    :return:经过特征选择后的训练集与测试集
+    """
+    print('feature_select...')
+    features = train.columns.tolist()
+    features.remove("card_id")
+    features.remove("target")
+    featureSelect = features[:]
+
+    # 去掉缺失值比例超过0.99的
+    for fea in features:
+        if train[fea].isnull().sum() / train.shape[0] >= 0.99:
+            featureSelect.remove(fea)
+
+    # 进行pearson相关性计算
+    corr = []
+    for fea in featureSelect:
+        corr.append(abs(train[[fea, 'target']].fillna(0).corr().values[0][1]))
+
+    # 取top300的特征进行建模，具体数量可选
+    se = pd.Series(corr, index=featureSelect).sort_values(ascending=False)
+    feature_select = ['card_id'] + se[:300].index.tolist()
+    print('done')
+    return train[feature_select + ['target']]
+
+all_train = pd.read_csv("/content/drive/My Drive/9417/train.csv")
+
+train= feature_select_pearson(all_train)
+y_train = train.iloc[:,-1]
+x_train = train.iloc[:,1:-1]
+
+kfolds = KFold(n_splits=3, shuffle=True, random_state=2018)
+oof_preds = np.zeros(x_train.shape[0])
+
+for trn_idx, val_idx in kfolds.split(x_train):
+  model = XGBRFRegressor().fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
+  oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
+print(np.sqrt(mean_squared_error(y_train, oof_preds)))
+
+
+est_scores = []
+n_estimators_list = [10,20,50,100,200,300,400]
+for l in n_estimators_list:
+  for trn_idx, val_idx in kfolds.split(x_train):
+    model = XGBRFRegressor(learning_rate=1, subsample=0.8, colsample_bynode=0.8,n_estimators = l).fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
+    oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
+  est_scores.append(np.sqrt(mean_squared_error(y_train, oof_preds)))
+print("best n_estimators {}".format(n_estimators_list[np.argmin(est_scores)]))
+print(min(est_scores))
+
+max_depth_scores = []
+max_depth_list = [1,2,3,4,5]
+for l in max_depth_list:
+  for trn_idx, val_idx in kfolds.split(x_train):
+    model = XGBRFRegressor(learning_rate=1, subsample=0.8, colsample_bynode=0.8,n_estimators = n_estimators_list[np.argmin(est_scores)],max_depth = l).fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
+    oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
+  max_depth_scores.append(np.sqrt(mean_squared_error(y_train, oof_preds)))
+print("best max_depth {}".format(max_depth_list[np.argmin(max_depth_scores)]))
+print(min(max_depth_scores))
+
+lr_scores = []
+learning_rates = [0.94,0.96,0.98,1.0,1.02,1.04,1.06]
+for l in learning_rates:
+  for trn_idx, val_idx in kfolds.split(x_train):
+    model = XGBRFRegressor(learning_rate=l, subsample=0.8, colsample_bynode=0.8,n_estimators = n_estimators_list[np.argmin(est_scores)],max_depth = max_depth_list[np.argmin(max_depth_scores)]).fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
+    oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
+  lr_scores.append(np.sqrt(mean_squared_error(y_train, oof_preds)))
+
+print("best learning_rate {}".format(learning_rates[np.argmin(lr_scores)]))
+print(min(lr_scores))
