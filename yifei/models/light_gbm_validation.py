@@ -1,6 +1,6 @@
 import lightgbm as lgb
 from hyperopt import hp, fmin, tpe
-from feature import feature_select_pearson
+from feature_selection import feature_select_pearson
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold

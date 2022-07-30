@@ -1,9 +1,9 @@
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_score
 import pandas as pd
 import numpy as np
-from feature import feature_select_pearson
+from feature_selection import feature_select_pearson
 from sklearn.model_selection import KFold
 from numpy.random import RandomState
 
@@ -58,13 +58,13 @@ def train_predict(train, test, best_clf):
     print('The score is:')
     print(sum(cv_score) / 5)
     # 验证集上预测结果写入本地文件
-    # pd.Series(prediction_train.sort_index().values).to_csv("preprocess/train_randomforest.csv", index=False)
+    pd.Series(prediction_train.sort_index().values).to_csv("preprocess/train_randomforest.csv", index=False)
     # 测试集上平均得分写入本地文件
-    # pd.Series(prediction_test / 5).to_csv("preprocess/test_randomforest.csv", index=False)
+    pd.Series(prediction_test / 5).to_csv("preprocess/test_randomforest.csv", index=False)
     # 在测试集上加入target，也就是预测标签
-    # test['target'] = prediction_test / 5
+    test['target'] = prediction_test / 5
     # 将测试集id和标签组成新的DataFrame并写入本地文件，该文件就是后续提交结果
-    # test[['card_id', 'target']].to_csv("result/submission_randomforest.csv", index=False)
+    test[['card_id', 'target']].to_csv("result/submission_randomforest.csv", index=False)
     return
 
 
@@ -78,6 +78,12 @@ print('param_grid_search')
 features = train.columns.tolist()
 features.remove("card_id")
 features.remove("target")
+
+
+x_data = train[features]
+y_data = train['target']
+
+x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.3, random_state=0)
 
 # parameter_space = {
 #     "n_estimators": [79, 80, 81],
@@ -104,7 +110,8 @@ clf = RandomForestRegressor(
     random_state=22)
 # 带入网格搜索
 grid = GridSearchCV(clf, parameter_space, cv=2, scoring="neg_mean_squared_error")
-grid.fit(train[features], train['target'])
+grid.fit(x_train, y_train)
+# grid.fit(train[features], train['target'])
 
 # # Step 3.输出网格搜索结果
 # print("best_params_:")
@@ -120,7 +127,20 @@ grid.fit(train[features], train['target'])
 # print('The score is:')
 # print(np.sqrt(-grid.best_score_))
 
-train_predict(train, test, grid.best_estimator_)
+#define cross-validation method to use
+cv = KFold(n_splits=5, random_state=22, shuffle=True)
+
+#build multiple linear regression model
+# model = LinearRegression()
+
+#use k-fold CV to evaluate model
+scores = cross_val_score(grid.best_estimator_, x_train, y_train, scoring='neg_mean_squared_error',
+                         cv=cv, n_jobs=-1)
+
+#view mean absolute error
+print(np.sqrt(np.mean(np.absolute(scores))))
+
+# train_predict(train, test, grid.best_estimator_)
 
 # test['target'] = grid.best_estimator_.predict(test[features])
 # test[['card_id', 'target']].to_csv("../result/randomforest.csv", index=False)

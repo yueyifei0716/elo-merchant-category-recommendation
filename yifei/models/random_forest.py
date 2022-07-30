@@ -1,20 +1,28 @@
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
-from feature import feature_select_pearson
+from feature_selection import feature_select_pearson, random_forest_wrapper
 
 train = pd.read_csv("../preprocess/train.csv")
 test = pd.read_csv("../preprocess/test.csv")
 
-train, test = feature_select_pearson(train, test)
+# train, test = feature_select_pearson(train, test)
+train, test = random_forest_wrapper(train, test)
 
 # Step 1.创建网格搜索空间
 print('param_grid_search')
 features = train.columns.tolist()
 features.remove("card_id")
 features.remove("target")
+
+
+x_data = train[features]
+y_data = train['target']
+
+x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.3, random_state=0)
 
 # parameter_space = {
 #     "n_estimators": [79, 80, 81],
@@ -41,21 +49,23 @@ clf = RandomForestRegressor(
     random_state=22)
 # 带入网格搜索
 grid = GridSearchCV(clf, parameter_space, cv=2, scoring="neg_mean_squared_error")
-grid.fit(train[features], train['target'])
+grid.fit(x_train, y_train)
 
 # Step 3.输出网格搜索结果
 print("best_params_:")
 print(grid.best_params_)
-means = grid.cv_results_["mean_test_score"]
-stds = grid.cv_results_["std_test_score"]
+# means = grid.cv_results_["mean_test_score"]
+# stds = grid.cv_results_["std_test_score"]
 # 此处额外考虑观察交叉验证过程中不同超参数的
-for mean, std, params in zip(means, stds, grid.cv_results_["params"]):
-    print("%0.3f (+/-%0.03f) for %r"
-          % (mean, std * 2, params))
+# for mean, std, params in zip(means, stds, grid.cv_results_["params"]):
+#     print("%0.3f (+/-%0.03f) for %r"
+#           % (mean, std * 2, params))
 print('The best estimator is:')
 print(grid.best_estimator_)
 print('The score is:')
 print(np.sqrt(-grid.best_score_))
 
-# test['target'] = grid.best_estimator_.predict(test[features])
+y_pred = grid.best_estimator_.predict(x_test)
+print('The RMSE is:')
+print(np.sqrt(mean_squared_error(y_test, y_pred)))
 # test[['card_id', 'target']].to_csv("../result/randomforest.csv", index=False)
