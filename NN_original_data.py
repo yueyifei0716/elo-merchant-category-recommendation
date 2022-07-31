@@ -41,19 +41,14 @@ loss_function = torch.nn.MSELoss()
 loss_value=[]
 for t in range(200):
     prediction = net(x_train)
-    # 预测值在前，真实值在后
     RSEM_loss = torch.sqrt(loss_function(prediction, y_train))
     loss_value.append(float(RSEM_loss))
-    # 把梯度设为0
     optimizer.zero_grad()
-    # 反向传播
     RSEM_loss.backward()
-    # 优化梯度
     optimizer.step()
 print(RSEM_loss)
 fig = plt.figure(figsize = (7,5))
 pl.plot(range(200),loss_value,'g-',label=u'Loss Value')
-# ‘’g‘’代表“green”,表示画出的曲线是绿色，“-”代表画的曲线是实线，可自行选择，label代表的是图例的名称，一般要在名称前面加一个u，如果名称是中文，会显示不出来，目前还不知道怎么解决。
 pl.legend()
 plt.xlabel(u'iters')
 plt.ylabel(u'loss value')
