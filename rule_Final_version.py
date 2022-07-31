@@ -5,7 +5,7 @@ origian_data=pd.read_csv('E:\Python_env\python_project\COMP 9417\Project/new_tra
 features=origian_data.drop(['card_id','target'],axis=1).columns
 col_num=origian_data.shape[0]
 train=origian_data.iloc[:int(col_num*0.3),:]
-train_all=origian_data.iloc[int(col_num*0.3):,:]
+train_all=origian_data.iloc[:,:]
 train_num=train.shape[0]
 train_all_num=train_all.shape[0]
 def unit_value_rule(features):
