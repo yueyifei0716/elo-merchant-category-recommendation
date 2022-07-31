@@ -12,40 +12,119 @@ import warnings
 warnings.simplefilter('ignore', FutureWarning)
 import heapq
 import math
-def feature_select_pearson(train):
-    """
-    利用pearson系数进行相关性特征
-    :param train:训练集
-    :param test:测试集
-    :return:经过特征选择后的训练集与测试集
-    """
+import warnings
+warnings.filterwarnings("ignore")
+from sklearn.model_selection import train_test_split, GridSearchCV
+
+
+def feature_select_pearson_ori(train):
+   
     print('feature_select...')
     features = train.columns.tolist()
     features.remove("card_id")
     features.remove("target")
     featureSelect = features[:]
 
-    # 去掉缺失值比例超过0.99的
+   
     for fea in features:
         if train[fea].isnull().sum() / train.shape[0] >= 0.99:
             featureSelect.remove(fea)
 
-    # 进行pearson相关性计算
+   
     corr = []
     for fea in featureSelect:
         corr.append(abs(train[[fea, 'target']].fillna(0).corr().values[0][1]))
 
-    # 取top300的特征进行建模，具体数量可选
     se = pd.Series(corr, index=featureSelect).sort_values(ascending=False)
     feature_select = ['card_id'] + se[:300].index.tolist()
     print('done')
     return train[feature_select + ['target']]
+def feature_select_pearson(train, test):
+  
+    print('feature_select...')
+    features = train.columns.tolist()
+    features.remove("card_id")
+    features.remove("target")
+    featureSelect = features[:]
 
-all_train = pd.read_csv("/content/drive/My Drive/9417/train.csv")
+    
+    for fea in features:
+        if train[fea].isnull().sum() / train.shape[0] >= 0.99:
+            featureSelect.remove(fea)
 
-train= feature_select_pearson(all_train)
-y_train = train.iloc[:,-1]
-x_train = train.iloc[:,1:-1]
+    
+    corr = []
+    for fea in featureSelect:
+        corr.append(abs(train[[fea, 'target']].fillna(0).corr().values[0][1]))
+
+    
+    se = pd.Series(corr, index=featureSelect).sort_values(ascending=False)
+    feature_select = ['card_id'] + se[:300].index.tolist()
+    print('done')
+    return train[feature_select + ['target']], test[feature_select + ['target']]
+def grid_search_cv(x_train, y_train, x_test, y_test):
+    parameters = {
+        'max_depth': [1,2,3,4,5,6],
+        'n_estimators': [20,50,100,200,300],
+        'learning_rate': [0.85,0.9,0.95,1,1.05,1.1,1.15]
+    }
+
+    model = xgb.XGBRFRegressor(objective="reg:squarederror", seed=42)
+
+    fit_params = {
+        "eval_set": [(x_test, y_test)]
+    }
+
+    grid = GridSearchCV(
+        estimator=model,
+        param_grid=parameters,
+        scoring='neg_mean_squared_error',
+        n_jobs=15,
+        cv=2
+    )
+
+    grid.fit(x_train, y_train, **fit_params)
+
+    
+    print("best_params_:")
+    print(grid.best_params_)
+    print('The best estimator is:')
+    print(grid.best_estimator_)
+    print('The score is:')
+    print(np.sqrt(-grid.best_score_))
+    return grid.best_estimator_
+
+
+def xgbrf_filter(train, test):
+    train, test = feature_select_pearson(train, test)
+    # Step 1.创建网格搜索空间
+    print('param_grid_search')
+    features = train.columns.tolist()
+    # features.remove("card_id")
+    features.remove("target")
+    # x_data = train[features]
+    # y_data = train['target']
+    x_train = train[features]
+    x_test = test[features]
+    y_train = train['target']
+    y_test = test['target']
+
+  
+
+    best_estimator = grid_search_cv(x_train.loc[:, x_train.columns != 'card_id'], y_train, x_test.loc[:, x_test.columns != 'card_id'], y_test)
+    y_pred = best_estimator.predict(x_test.loc[:, x_test.columns != 'card_id'])
+    print('RMSE after parameter tuning is')
+    print(np.sqrt(mean_squared_error(y_test, y_pred)))
+
+    
+    x_test['predict_target'] = y_pred
+    
+    x_test[['card_id', 'predict_target']].to_csv("/content/drive/My Drive/9417/xgboost_filter.csv", index=False)
+train = pd.read_csv("/content/drive/My Drive/9417/train.csv")
+test = pd.read_csv("/content/drive/My Drive/9417/test.csv")
+train_ori= feature_select_pearson_ori(train)
+y_train = train_ori.iloc[:,-1]
+x_train = train_ori.iloc[:,1:-1]
 
 kfolds = KFold(n_splits=3, shuffle=True, random_state=2018)
 oof_preds = np.zeros(x_train.shape[0])
@@ -53,36 +132,6 @@ oof_preds = np.zeros(x_train.shape[0])
 for trn_idx, val_idx in kfolds.split(x_train):
   model = XGBRFRegressor().fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
   oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
-print(np.sqrt(mean_squared_error(y_train, oof_preds)))
+print("RMSE before parameter tuning is".format(np.sqrt(mean_squared_error(y_train, oof_preds))))
 
-
-est_scores = []
-n_estimators_list = [10,20,50,100,200,300,400]
-for l in n_estimators_list:
-  for trn_idx, val_idx in kfolds.split(x_train):
-    model = XGBRFRegressor(learning_rate=1, subsample=0.8, colsample_bynode=0.8,n_estimators = l).fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
-    oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
-  est_scores.append(np.sqrt(mean_squared_error(y_train, oof_preds)))
-print("best n_estimators {}".format(n_estimators_list[np.argmin(est_scores)]))
-print(min(est_scores))
-
-max_depth_scores = []
-max_depth_list = [1,2,3,4,5]
-for l in max_depth_list:
-  for trn_idx, val_idx in kfolds.split(x_train):
-    model = XGBRFRegressor(learning_rate=1, subsample=0.8, colsample_bynode=0.8,n_estimators = n_estimators_list[np.argmin(est_scores)],max_depth = l).fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
-    oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
-  max_depth_scores.append(np.sqrt(mean_squared_error(y_train, oof_preds)))
-print("best max_depth {}".format(max_depth_list[np.argmin(max_depth_scores)]))
-print(min(max_depth_scores))
-
-lr_scores = []
-learning_rates = [0.94,0.96,0.98,1.0,1.02,1.04,1.06]
-for l in learning_rates:
-  for trn_idx, val_idx in kfolds.split(x_train):
-    model = XGBRFRegressor(learning_rate=l, subsample=0.8, colsample_bynode=0.8,n_estimators = n_estimators_list[np.argmin(est_scores)],max_depth = max_depth_list[np.argmin(max_depth_scores)]).fit(x_train.iloc[trn_idx], y_train.iloc[trn_idx])
-    oof_preds[val_idx] = model.predict(x_train.iloc[val_idx])
-  lr_scores.append(np.sqrt(mean_squared_error(y_train, oof_preds)))
-
-print("best learning_rate {}".format(learning_rates[np.argmin(lr_scores)]))
-print(min(lr_scores))
+xgb_filter(train, test)
