@@ -111,9 +111,12 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-/elo-merchant-category-recommendation/
+/submission/elo-merchant-category-recommendation/
 elo-merchant-category-recommendation.zip
 /yifei/preprocess/
 *.ipynb
-/yifei/models/__pycache__/
+/submission/models/__pycache__/
 /yifei/result
+/yifei/dataset
+
+*.csv
