@@ -13,7 +13,7 @@
 
 ## Installation
 
-### Git clone this repository and setup the environment:
+### Git clone the repository or just use the zip file and setup the environment:
 1. `git clone https://github.com/yueyifei0716/COMP9417-Project.git`
 2. `cd COMP9417-Project-master`
 3. `pip install -r requirements.txt`
