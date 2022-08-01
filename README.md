@@ -97,7 +97,4 @@ The result files with the prefix of 'submission_' are the predictions made on th
 │   ├── xgboost_filter.csv
 │   └── xgboost_wrapper.csv
 └── split_train_test.py
-
-
-
 ```
