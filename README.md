@@ -51,4 +51,53 @@ saved under the result directory, and all evaluation results i.e. RMSE will be d
 
 The result files with the prefix of 'submission_' are the predictions made on the official testing set. We can submit these files to kaggle and obtain the official score (We have completed the submission and finally discussed it in the report).
 
+### The directory structure should be the same as below
+```tree
+├── README.md
+├── elo-merchant-category-recommendation
+├── feature_engineering.py
+├── get_train_sample.py
+├── models
+│   ├── feature_selection.py
+│   ├── light_gbm.py
+│   ├── nn_filter.py
+│   ├── nn_origin.py
+│   ├── random_forest.py
+│   ├── voting.py
+│   ├── xg_boost.py
+│   └── xgb_rf.py
+├── preprocess
+│   ├── new_test.csv
+│   ├── new_train.csv
+│   ├── new_train_30perc.csv
+│   ├── test.csv
+│   ├── test_dict.csv
+│   ├── test_groupby.csv
+│   ├── test_pre.csv
+│   ├── train.csv
+│   ├── train_dict.csv
+│   ├── train_groupby.csv
+│   ├── train_pre.csv
+│   ├── transaction_d_pre.csv
+│   └── transaction_g_pre.csv
+├── preprocessing.py
+├── requirements.txt
+├── result
+│   ├── lightgbm_filter.csv
+│   ├── lightgbm_wrapper.csv
+│   ├── randomforest_filter.csv
+│   ├── randomforest_wrapper.csv
+│   ├── submission_lightGBM_wrapper.csv
+│   ├── submission_randomforest_wrapper.csv
+│   ├── submission_voting_avg.csv
+│   ├── submission_voting_weight.csv
+│   ├── submission_xgboost_wrapper.csv
+│   ├── voting_avg.csv
+│   ├── voting_weight.csv
+│   ├── xgboost_filter.csv
+│   └── xgboost_wrapper.csv
+└── split_train_test.py
 
+
+
+```
