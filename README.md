@@ -1,14 +1,9 @@
 # COMP9417 Project - Elo Merchant Category Recommendation
 
-## Dream Team - Group members
-
-|      NAME      | Student ID |
-|:--------------:|:----------:|
-|   Yifei Yue    |  z5392319  |
-|   Zhao Zheng   |  z5297877  |
-|  Yuanwei Zhao  |  z5355526  |
-|   Jiahui Xie   |  z5341211  |
-| Xiandong Cheng |  z5342690  |
+- Developed machine learning models to predict user loyalty in the ELO merchant category recommendation project, utilizing 1.05 million user transaction records and approximately 330,000 merchant records.
+- Implemented data preprocessing techniques including stitching, feature extension, and feature selection using filter and wrapper methods.
+- Trained and tuned machine learning models using random forest, LightGBM, and XGBoost, applying cross- validated grid search and TPE hyperparameter optimization for parameter tuning.
+- Improved model accuracy and stability by ensemble learning techniques, including voting and averaging.
 
 
 ## Installation
